@@ -26,17 +26,18 @@ pipeline {
             steps {
                 script {
                     echo "Running tests in Docker container..."
-                    if (env.BRANCH_NAME == 'master') {
-                        sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:latest"
-                    } else if (env.BRANCH_NAME == 'develop') {
-                        sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                    try {
+                        if (env.BRANCH_NAME == 'master') {
+                            sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:latest"
+                        } else if (env.BRANCH_NAME == 'develop') {
+                            sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                        }
+
+                        // Example test command
+                        // sh "curl -I http://localhost:80"
+                    } finally {
+                        sh "docker ps -q --filter name=${APP_CONTAINER_NAME} | grep -q . && docker stop ${APP_CONTAINER_NAME} || echo 'No such container: ${APP_CONTAINER_NAME}'"
                     }
-
-                    // Example test command
-                    // sh "curl -I http://localhost:80"
-
-                    // Stop the container after tests
-                    sh "docker stop ${APP_CONTAINER_NAME}"
                 }
             }
         }
