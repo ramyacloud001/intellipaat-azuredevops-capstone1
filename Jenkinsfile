@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "ramyacloud001/intellipaat-capstone2"
+        DOCKER_IMAGE = "ramyacloud001/intellipaat-capstone-master"
         DOCKER_REGISTRY = "docker.io"
         APP_CONTAINER_NAME = "webapp_container_${BUILD_ID}"
     }
