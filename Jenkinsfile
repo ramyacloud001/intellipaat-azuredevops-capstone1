@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE = "ramyacloud001/intellipaat-capstone1"
         DOCKER_REGISTRY = "docker.io"
-        APP_CONTAINER_NAME = "webapp_container"
+        APP_CONTAINER_NAME = "webapp_container_${BUILD_ID}"
     }
 
     stages {
@@ -22,11 +22,16 @@ pipeline {
             steps {
                 script {
                     echo "Running tests in Docker container..."
+                    // Stop and remove any existing container with the same name
+                    sh "docker ps -q --filter name=${APP_CONTAINER_NAME} | grep -q . && docker stop ${APP_CONTAINER_NAME} && docker rm ${APP_CONTAINER_NAME} || true"
+                    
+                    // Run the Docker container for testing
                     sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:${BUILD_ID}"
 
                     // Add test commands here, such as:
                     // sh "curl -I http://localhost:80"
 
+                    // Stop the container after tests
                     sh "docker stop ${APP_CONTAINER_NAME}"
                 }
             }
