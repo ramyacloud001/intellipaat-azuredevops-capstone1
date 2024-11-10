@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = "ramyacloud001/intellipaat-capstone2"
-        DOCKER_REGISTRY = "docker.io"  // Default registry for Docker Hub
+        DOCKER_REGISTRY = "docker.io"
         APP_CONTAINER_NAME = "webapp_container"
     }
 
@@ -11,9 +11,12 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    // Build Docker image from Dockerfile
                     echo "Building Docker image..."
-                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_ID} ."
+                    if (env.BRANCH_NAME == 'master') {
+                        sh "docker build -t ${DOCKER_IMAGE}:latest ."
+                    } else if (env.BRANCH_NAME == 'develop') {
+                        sh "docker build -t ${DOCKER_IMAGE}:${env.BRANCH_NAME}-${BUILD_ID} ."
+                    }
                 }
             }
         }
@@ -21,11 +24,14 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    // Run the Docker container for testing
                     echo "Running tests in Docker container..."
-                    sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:${BUILD_ID}"
-
-                    // Add test commands here, such as:
+                    if (env.BRANCH_NAME == 'master') {
+                        sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:latest"
+                    } else if (env.BRANCH_NAME == 'develop') {
+                        sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:${env.BRANCH_NAME}-${BUILD_ID}"
+                    }
+                    
+                    // Example test command
                     // sh "curl -I http://localhost:80"
 
                     // Stop the container after tests
@@ -40,19 +46,14 @@ pipeline {
             }
             steps {
                 script {
-                    // Tag the image for deployment
                     echo "Tagging Docker image for deployment..."
-                    sh "docker tag ${DOCKER_IMAGE}:${BUILD_ID} ${DOCKER_IMAGE}:latest"
+                    sh "docker tag ${DOCKER_IMAGE}:latest ${DOCKER_IMAGE}:prod"
 
-                    // Push the image to Docker Hub
                     echo "Pushing Docker image to Docker Hub..."
-                    sh "docker push ${DOCKER_IMAGE}:latest"
+                    sh "docker push ${DOCKER_IMAGE}:prod"
 
-                    // Deploy the image using Docker Compose (for local deployment)
                     echo "Deploying application..."
                     sh "docker-compose -f docker-compose.yml up -d"
-
-                    // Alternatively, if deploying to a cloud service (e.g., Azure, AWS), use respective CLI commands.
                 }
             }
         }
@@ -61,7 +62,8 @@ pipeline {
     post {
         always {
             echo "Cleaning up Docker environment..."
-            sh "docker rmi ${DOCKER_IMAGE}:${BUILD_ID} || true"
+            sh "docker rmi ${DOCKER_IMAGE}:latest || true"
+            sh "docker rmi ${DOCKER_IMAGE}:${env.BRANCH_NAME}-${BUILD_ID} || true"
         }
         success {
             echo "Pipeline completed successfully!"
