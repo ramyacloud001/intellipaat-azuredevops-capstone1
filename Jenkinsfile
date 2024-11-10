@@ -8,16 +8,6 @@ pipeline {
     }
 
     stages {
-        stage('Checkout SCM') {
-            steps {
-                script {
-                    // Get the branch name from the Git repository
-                    env.BRANCH_NAME = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
-                    echo "Checked out branch: ${env.BRANCH_NAME}"
-                }
-            }
-        }
-
         stage('Build') {
             steps {
                 script {
@@ -46,10 +36,7 @@ pipeline {
 
         stage('Deploy') {
             when {
-                expression {
-                    echo "Current Branch: ${env.BRANCH_NAME}"  // Debugging line
-                    return env.BRANCH_NAME == 'master'
-                }
+                branch 'master'
             }
             steps {
                 script {
