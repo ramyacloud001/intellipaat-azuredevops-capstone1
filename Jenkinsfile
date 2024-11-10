@@ -5,6 +5,7 @@ pipeline {
         DOCKER_IMAGE = "ramyacloud001/intellipaat-capstone2"
         DOCKER_REGISTRY = "docker.io"
         APP_CONTAINER_NAME = "webapp_container"
+        IMAGE_TAG = "${env.BRANCH_NAME}-${BUILD_ID}"
     }
 
     stages {
@@ -15,7 +16,7 @@ pipeline {
                     if (env.BRANCH_NAME == 'master') {
                         sh "docker build -t ${DOCKER_IMAGE}:latest ."
                     } else if (env.BRANCH_NAME == 'develop') {
-                        sh "docker build -t ${DOCKER_IMAGE}:${env.BRANCH_NAME}-${BUILD_ID} ."
+                        sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} ."
                     }
                 }
             }
@@ -28,9 +29,9 @@ pipeline {
                     if (env.BRANCH_NAME == 'master') {
                         sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:latest"
                     } else if (env.BRANCH_NAME == 'develop') {
-                        sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:${env.BRANCH_NAME}-${BUILD_ID}"
+                        sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:${IMAGE_TAG}"
                     }
-                    
+
                     // Example test command
                     // sh "curl -I http://localhost:80"
 
@@ -62,8 +63,13 @@ pipeline {
     post {
         always {
             echo "Cleaning up Docker environment..."
-            sh "docker rmi ${DOCKER_IMAGE}:latest || true"
-            sh "docker rmi ${DOCKER_IMAGE}:${env.BRANCH_NAME}-${BUILD_ID} || true"
+            script {
+                if (env.BRANCH_NAME == 'master') {
+                    sh "docker rmi ${DOCKER_IMAGE}:latest || true"
+                } else if (env.BRANCH_NAME == 'develop') {
+                    sh "docker rmi ${DOCKER_IMAGE}:${IMAGE_TAG} || true"
+                }
+            }
         }
         success {
             echo "Pipeline completed successfully!"
