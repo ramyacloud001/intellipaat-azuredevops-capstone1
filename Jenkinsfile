@@ -13,13 +13,8 @@ pipeline {
             steps {
                 script {
                     echo "Building Docker image..."
-                    if (env.BRANCH_NAME == 'master') {
-                        // Build the image with 'latest' tag for master branch
-                        sh "docker build -t ${DOCKER_IMAGE}:latest ."
-                    } else if (env.BRANCH_NAME == 'develop') {
-                        // Build the image with 'dev' tag for develop branch
-                        sh "docker build -t ${DOCKER_IMAGE}:dev ."
-                    }
+                    // Build the image with the appropriate tag based on branch name
+                    sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} ."
                 }
             }
         }
@@ -29,25 +24,22 @@ pipeline {
                 script {
                     echo "Running tests in Docker container..."
                     try {
-                        // Run the container based on the branch name
-                        if (env.BRANCH_NAME == 'master') {
-                            sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:latest"
-                        } else if (env.BRANCH_NAME == 'develop') {
-                            sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:dev"
-                        }
+                        // Run the container with the appropriate tag
+                        sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:${IMAGE_TAG}"
 
-                        // Wait for a while to ensure the container is running
-                        sleep(10)  // Sleep for 10 seconds to allow the container to fully start
+                        // Sleep for 15 seconds to allow the container to fully start
+                        sleep(15)
 
-                        // Check if the container is running and output logs for debugging
+                        // Check the status of the container
                         sh "docker ps -a --filter name=${APP_CONTAINER_NAME}"
+
+                        // Check container logs for errors
                         sh "docker logs ${APP_CONTAINER_NAME}"
 
                         // Example test command, such as a curl request to check the app is up
                         // sh "curl -I http://localhost:80"
                     } catch (Exception e) {
                         echo "Error running Docker container: ${e.message}"
-                        // Optional: Exit early or continue depending on the severity
                         currentBuild.result = 'FAILURE'
                     } finally {
                         // Attempt to stop the container if it is running
@@ -58,15 +50,14 @@ pipeline {
         }
 
         stage('Deploy') {
-            when {
-                branch 'master'
-            }
             steps {
                 script {
-                    echo "Tagging Docker image for production deployment..."
-                    sh "docker tag ${DOCKER_IMAGE}:latest ${DOCKER_IMAGE}:prod"
+                    echo "Tagging Docker image for deployment..."
+                    // Tag the image as prod for deployment
+                    sh "docker tag ${DOCKER_IMAGE}:${IMAGE_TAG} ${DOCKER_IMAGE}:prod"
 
                     echo "Pushing Docker image to Docker Hub..."
+                    // Push the prod image to Docker registry
                     sh "docker push ${DOCKER_IMAGE}:prod"
 
                     echo "Deploying application to production..."
@@ -81,14 +72,9 @@ pipeline {
         always {
             echo "Cleaning up Docker environment..."
             script {
-                if (env.BRANCH_NAME == 'master') {
-                    // Clean up the latest image after use in master branch
-                    sh "docker rmi ${DOCKER_IMAGE}:latest || true"
-                    sh "docker rmi ${DOCKER_IMAGE}:prod || true"
-                } else if (env.BRANCH_NAME == 'develop') {
-                    // Clean up the dev image after use in develop branch
-                    sh "docker rmi ${DOCKER_IMAGE}:dev || true"
-                }
+                // Clean up images after use
+                sh "docker rmi ${DOCKER_IMAGE}:${IMAGE_TAG} || true"
+                sh "docker rmi ${DOCKER_IMAGE}:prod || true"
             }
         }
         success {
