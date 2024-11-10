@@ -29,15 +29,28 @@ pipeline {
                 script {
                     echo "Running tests in Docker container..."
                     try {
+                        // Run the container based on the branch name
                         if (env.BRANCH_NAME == 'master') {
                             sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:latest"
                         } else if (env.BRANCH_NAME == 'develop') {
                             sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:dev"
                         }
 
-                        // Example test command
+                        // Wait for a while to ensure the container is running
+                        sleep(10)  // Sleep for 10 seconds to allow the container to fully start
+
+                        // Check if the container is running and output logs for debugging
+                        sh "docker ps -a --filter name=${APP_CONTAINER_NAME}"
+                        sh "docker logs ${APP_CONTAINER_NAME}"
+
+                        // Example test command, such as a curl request to check the app is up
                         // sh "curl -I http://localhost:80"
+                    } catch (Exception e) {
+                        echo "Error running Docker container: ${e.message}"
+                        // Optional: Exit early or continue depending on the severity
+                        currentBuild.result = 'FAILURE'
                     } finally {
+                        // Attempt to stop the container if it is running
                         sh "docker ps -q --filter name=${APP_CONTAINER_NAME} | grep -q . && docker stop ${APP_CONTAINER_NAME} || echo 'No such container: ${APP_CONTAINER_NAME}'"
                     }
                 }
