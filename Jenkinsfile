@@ -8,10 +8,21 @@ pipeline {
     }
 
     stages {
+        stage('Get Branch Name') {
+            steps {
+                script {
+                    // Get the branch name
+                    env.BRANCH_NAME = sh(
+                        script: "git rev-parse --abbrev-ref HEAD",
+                        returnStdout: true
+                    ).trim()
+                    echo "Current Branch: ${env.BRANCH_NAME}"
+                }
+            }
+        }
         stage('Build') {
             steps {
                 script {
-                    echo "Current Branch: ${env.BRANCH_NAME}"
                     echo "Building Docker image..."
                     sh "docker build -t ${DOCKER_IMAGE}:${BUILD_ID} ."
                 }
@@ -34,7 +45,7 @@ pipeline {
 
         stage('Deploy') {
             when {
-                branch 'master'
+                expression { env.BRANCH_NAME == 'master' }
             }
             steps {
                 script {
