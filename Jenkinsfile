@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "ramyacloud001/intellipaat-capstone1"
+        DOCKER_IMAGE = "ramyacloud001/intellipaat-capstone2"
         DOCKER_REGISTRY = "docker.io"  // Default registry for Docker Hub
         APP_CONTAINER_NAME = "webapp_container"
     }
