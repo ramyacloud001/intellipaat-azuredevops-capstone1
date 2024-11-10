@@ -2,19 +2,18 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "ramyacloud001/intellipaat-capstone2"
-        DOCKER_REGISTRY = "docker.io"
+        DOCKER_IMAGE = "ramyacloud001/intellipaat-capstone1"
+        DOCKER_REGISTRY = "docker.io"  // Default registry for Docker Hub
         APP_CONTAINER_NAME = "webapp_container"
-        IMAGE_TAG = "${env.BRANCH_NAME}-${BUILD_ID}"
     }
 
     stages {
         stage('Build') {
             steps {
                 script {
+                    // Build Docker image from Dockerfile
                     echo "Building Docker image..."
-                    // Build the image with the appropriate tag based on branch name
-                    sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} ."
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_ID} ."
                 }
             }
         }
@@ -22,47 +21,38 @@ pipeline {
         stage('Test') {
             steps {
                 script {
+                    // Run the Docker container for testing
                     echo "Running tests in Docker container..."
-                    try {
-                        // Run the container with the appropriate tag
-                        sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                    sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:${BUILD_ID}"
 
-                        // Sleep for 15 seconds to allow the container to fully start
-                        sleep(15)
+                    // Add test commands here, such as:
+                    // sh "curl -I http://localhost:80"
 
-                        // Check the status of the container
-                        sh "docker ps -a --filter name=${APP_CONTAINER_NAME}"
-
-                        // Check container logs for errors
-                        sh "docker logs ${APP_CONTAINER_NAME}"
-
-                        // Example test command, such as a curl request to check the app is up
-                        // sh "curl -I http://localhost:80"
-                    } catch (Exception e) {
-                        echo "Error running Docker container: ${e.message}"
-                        currentBuild.result = 'FAILURE'
-                    } finally {
-                        // Attempt to stop the container if it is running
-                        sh "docker ps -q --filter name=${APP_CONTAINER_NAME} | grep -q . && docker stop ${APP_CONTAINER_NAME} || echo 'No such container: ${APP_CONTAINER_NAME}'"
-                    }
+                    // Stop the container after tests
+                    sh "docker stop ${APP_CONTAINER_NAME}"
                 }
             }
         }
 
         stage('Deploy') {
+            when {
+                branch 'master'
+            }
             steps {
                 script {
+                    // Tag the image for deployment
                     echo "Tagging Docker image for deployment..."
-                    // Tag the image as prod for deployment
-                    sh "docker tag ${DOCKER_IMAGE}:${IMAGE_TAG} ${DOCKER_IMAGE}:prod"
+                    sh "docker tag ${DOCKER_IMAGE}:${BUILD_ID} ${DOCKER_IMAGE}:latest"
 
+                    // Push the image to Docker Hub
                     echo "Pushing Docker image to Docker Hub..."
-                    // Push the prod image to Docker registry
-                    sh "docker push ${DOCKER_IMAGE}:prod"
+                    sh "docker push ${DOCKER_IMAGE}:latest"
 
-                    echo "Deploying application to production..."
-                    // Assuming docker-compose for deployment in production
+                    // Deploy the image using Docker Compose (for local deployment)
+                    echo "Deploying application..."
                     sh "docker-compose -f docker-compose.yml up -d"
+
+                    // Alternatively, if deploying to a cloud service (e.g., Azure, AWS), use respective CLI commands.
                 }
             }
         }
@@ -71,11 +61,7 @@ pipeline {
     post {
         always {
             echo "Cleaning up Docker environment..."
-            script {
-                // Clean up images after use
-                sh "docker rmi ${DOCKER_IMAGE}:${IMAGE_TAG} || true"
-                sh "docker rmi ${DOCKER_IMAGE}:prod || true"
-            }
+            sh "docker rmi ${DOCKER_IMAGE}:${BUILD_ID} || true"
         }
         success {
             echo "Pipeline completed successfully!"
