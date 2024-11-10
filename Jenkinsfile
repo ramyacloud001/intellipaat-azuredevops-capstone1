@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "ramyacloud001/intellipaat-capstone2"
+        DOCKER_IMAGE = "ramyacloud001/intellipaat-capstone1"
         DOCKER_REGISTRY = "docker.io"  // Default registry for Docker Hub
         APP_CONTAINER_NAME = "webapp_container"
     }
@@ -36,7 +36,10 @@ pipeline {
 
         stage('Deploy') {
             when {
-                branch 'master'
+                expression {
+                    echo "Current Branch: ${env.BRANCH_NAME}"  // Debugging line
+                    return env.BRANCH_NAME == 'master'
+                }
             }
             steps {
                 script {
