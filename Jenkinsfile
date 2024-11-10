@@ -3,26 +3,15 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = "ramyacloud001/intellipaat-capstone1"
-        DOCKER_REGISTRY = "docker.io"  // Default registry for Docker Hub
+        DOCKER_REGISTRY = "docker.io"
         APP_CONTAINER_NAME = "webapp_container"
     }
 
     stages {
-        stage('Get Branch Name') {
-            steps {
-                script {
-                    // Get the branch name
-                    env.BRANCH_NAME = sh(
-                        script: "git rev-parse --abbrev-ref HEAD",
-                        returnStdout: true
-                    ).trim()
-                    echo "Current Branch: ${env.BRANCH_NAME}"
-                }
-            }
-        }
         stage('Build') {
             steps {
                 script {
+                    echo "Current Branch: ${env.BRANCH_NAME}"
                     echo "Building Docker image..."
                     sh "docker build -t ${DOCKER_IMAGE}:${BUILD_ID} ."
                 }
