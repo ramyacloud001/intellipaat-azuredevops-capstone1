@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  webapp:
+    build: .
+    image: ramyacloud001/intellipaat-capstone1:latest  # Updated to use Docker Hub repo
+    container_name: webapp_container
+    ports:
+      - "80:80"   # Expose container's port 80 to the host
+    volumes:
+      - ./webapp:/var/www/html  # Map local webapp folder to container's web folder
+    environment:
+      - APP_ENV=production      # Set any necessary environment variables
+    restart: always             # Ensure the container restarts on failure
