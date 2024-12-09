@@ -16,21 +16,8 @@ spec:
     spec:
       containers:
       - name: html-website
-        image: ${IMAGE_TAG}  # This will be replaced by the actual image tag during Jenkins deployment
+        image: aksregistrydevops.azurecr.io/aksregistrydevops:${IMAGE_TAG}  # This will be replaced by the actual image tag during Jenkins deployment
         ports:
         - containerPort: 80  # Nginx serves content on port 80
       imagePullSecrets:
       - name: acr-secret  # Ensure this is configured for your Azure Container Registry
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: html-website-service
-spec:
-  selector:
-    app: html-website
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 80
-  type: LoadBalancer  # Expose the service to the internet via a LoadBalancer
