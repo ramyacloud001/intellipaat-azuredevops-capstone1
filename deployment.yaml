@@ -1,56 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cluster-test-deployment
+  name: html-website-deployment
+  labels:
+    app: html-website
 spec:
-  replicas: 10  # Start with 10 replicas; HPA will scale this automatically
+  replicas: 2  # You can adjust this based on your needs
   selector:
     matchLabels:
-      app: django
+      app: html-website
   template:
     metadata:
       labels:
-        app: django
+        app: html-website
     spec:
       containers:
-      - name: django
+      - name: html-website
         image: ${IMAGE_TAG}  # This will be replaced by the actual image tag during Jenkins deployment
         ports:
-        - containerPort: 8000  # The port your Django app listens on
-        env:
-        # Redis connection variables pulled from the Kubernetes secret
-        - name: REDIS_HOST  # Redis host as an environment variable
-          valueFrom:
-            secretKeyRef:
-              name: redis-secret  # Name of the secret
-              key: redis_host     # The key inside the secret containing the Redis host (e.g., "aiq65stage.redis.cache.windows.net")
-        - name: REDIS_PORT
-          valueFrom:
-            secretKeyRef:
-              name: redis-secret
-              key: redis_port     # The key inside the secret containing the Redis port (e.g., "6379")
-        - name: REDIS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: redis-secret
-              key: redis_password # The key inside the secret containing the Redis password
-        command: ["/app/new_env/bin/python"]  # Use the Python interpreter from the virtual environment
-        args: ["manage.py", "runserver", "0.0.0.0:8000"]  # Command to run your application
-
-        # Define resource requests and limits
-        resources:
-          requests:
-            cpu: "500m"  # 500 millicores, minimum CPU request
-            memory: "512Mi"  # Minimum memory request
-          limits:
-            cpu: "1000m"  # 1 core max
-            memory: "1Gi"  # 1 GiB max memory
-
-      # Image pull secret for ACR
+        - containerPort: 80  # Nginx serves content on port 80
       imagePullSecrets:
       - name: acr-secret  # Ensure this is configured for your Azure Container Registry
-
-      # Volume for temporary storage (ephemeral)
-      volumes:
-      - name: venv-volume
-        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: html-website-service
+spec:
+  selector:
+    app: html-website
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer  # Expose the service to the internet via a LoadBalancer
