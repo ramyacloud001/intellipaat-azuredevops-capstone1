@@ -34,7 +34,7 @@ pipeline {
         stage('Authenticate with AKS') {
             steps {
                 script {
-                    withCredentials([azureServicePrincipal('<CREDENTIAL_ID>')]) {
+                    withCredentials([azureServicePrincipal('azure-service-principle')]) {
                         sh '''
                         az login --service-principal --username $AZURE_CLIENT_ID --password $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
                         az aks get-credentials --resource-group ${resourceGroup} --name ${K8S_CLUSTER} --subscription ${AZURE_SUBSCRIPTION_ID}
