@@ -53,7 +53,7 @@ pipeline {
                                      string(credentialsId: 'acr-email', variable: 'ACR_EMAIL')]) {
                         sh '''
                         kubectl create secret docker-registry ${ACR_SECRET_NAME} \
-                          --docker-server=${ACR_DOCKER_SERVER} \
+                          --docker-server=${registryUrl} \
                           --docker-username=${ACR_USERNAME} \
                           --docker-password=${ACR_PASSWORD} \
                           --docker-email=${ACR_EMAIL} || true
@@ -67,7 +67,8 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    sed -i 's|image: .*|image: ${registryUrl}/${registryName}:${versionTag}|' deployment.yaml
+                    IMAGE_TAG=${registryUrl}/${registryName}:${versionTag}
+                    sed -i 's|image: .*|image: '"${IMAGE_TAG}"'|' deployment.yaml
                     kubectl apply -f deployment.yaml
                     kubectl apply -f service.yaml
                     '''
