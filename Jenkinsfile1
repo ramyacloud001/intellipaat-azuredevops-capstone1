@@ -1,0 +1,101 @@
+pipeline {
+    agent any
+
+    environment {
+        registryName = "aksregistrydevops"  // Your ACR repository name
+        registryCredential = 'aksregistrydevops'  // Jenkins credentials ID for ACR
+        registryUrl = 'aksregistrydevops.azurecr.io'  // Your ACR URL
+        resourceGroup = 'aks-resource-group'  // Your Azure resource group
+        versionTag = "v${env.BUILD_ID}-${new Date().format('yyyyMMdd-HHmmss')}"  // Version tag (build number + timestamp)
+        K8S_NAMESPACE = 'cluster-test'  // Kubernetes namespace
+        AZURE_SUBSCRIPTION_ID = '9a668e8f-ad3f-48a1-94cb-fbcf50b35167'  // Azure subscription ID
+        K8S_CLUSTER = 'akscluster'  // Kubernetes cluster name
+    }
+
+    stages {
+        stage('Prepare Full Chain Certificate') {
+            steps {
+                script {
+                    // Directly use fullchain.pem which already includes the full certificate chain
+                    echo "Using fullchain.pem directly as the certificate..."
+                    sh 'cat ./fullchain.pem'  // Ensure the full chain is correct
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build the Docker image with the dynamic version tag
+                    dockerImage = docker.build("${registryName}:${versionTag}")
+                }
+            }
+        }
+
+        stage('Upload Image to ACR') {
+            steps {
+                script {
+                    // Push the Docker image to Azure Container Registry (ACR)
+                    docker.withRegistry("https://${registryUrl}", registryCredential) {
+                        dockerImage.push("${versionTag}")
+                    }
+                }
+            }
+        }
+
+        stage('Verify Deployment Configuration') {
+            steps {
+                script {
+                    // Verify the contents of the deployment.yaml to ensure the replica count is correct
+                    sh 'cat manifest-files/deployment.yaml'
+                }
+            }
+        }
+
+        stage('Delete Existing Deployment') {
+            steps {
+                script {
+                    // Delete the existing Kubernetes deployment if it exists
+                    sh '''
+                    kubectl delete deployment aiq65test-deployment -n ${K8S_NAMESPACE} || echo "Deployment does not exist"
+                    '''
+                }
+            }
+        }
+
+        stage('Update Kubernetes Deployment') {
+            steps {
+                script {
+                    // Replace the image placeholder in the deployment.yaml with the actual image tag
+                    echo "Updating Kubernetes deployment with the new image tag..."
+                    sh """
+                    sed -i 's|image: .*\${IMAGE_TAG}|image: ${registryUrl}/${registryName}:${versionTag}|' manifest-files/deployment.yaml
+                    kubectl apply -f manifest-files/deployment.yaml -n ${K8S_NAMESPACE}
+                    """
+                }
+            }
+        }
+
+        stage('Apply Other Kubernetes Manifests') {
+            steps {
+                script {
+                    // Apply other Kubernetes resources (services, ingress, etc.)
+                    sh '''
+                    kubectl apply -f manifest-files/service.yaml -n ${K8S_NAMESPACE} 
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        cleanup {
+            // Remove the TLS files after they are no longer needed
+            sh 'rm -f ./tls.crt ./privkey.pem ./tls.fullchain.crt'
+        }
+        always {
+            // Clean up the workspace after pipeline execution
+            cleanWs()
+        }
+    }
+}
