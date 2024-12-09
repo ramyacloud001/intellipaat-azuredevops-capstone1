@@ -13,15 +13,6 @@ pipeline {
     }
 
     stages {
-        stage('Prepare Full Chain Certificate') {
-            steps {
-                script {
-                    // Directly use fullchain.pem which already includes the full certificate chain
-                    echo "Using fullchain.pem directly as the certificate..."
-                    sh 'cat ./fullchain.pem'  // Ensure the full chain is correct
-                }
-            }
-        }
 
         stage('Build Docker Image') {
             steps {
