@@ -1,0 +1,104 @@
+provider "azurerm" {
+  features {}
+  subscription_id = "9a668e8f-ad3f-48a1-94cb-fbcf50b35167"
+  client_id       = "2958b420-9896-453b-9fc8-78d41bda257e"
+  client_secret   = ""
+  tenant_id       = "5d3e282f-6b65-4268-8508-1ad71a86351b"
+}
+
+# Define Resource Group
+resource "azurerm_resource_group" "aks" {
+  name     = "aks-resource-group"
+  location = "East US"
+}
+
+# Define Virtual Network
+resource "azurerm_virtual_network" "aks_vnet" {
+  name                = "aksvnet"
+  location            = azurerm_resource_group.aks.location
+  resource_group_name = azurerm_resource_group.aks.name
+  address_space       = ["10.0.0.0/16"]
+}
+
+# Define Subnet for AKS Cluster
+resource "azurerm_subnet" "aks_subnet" {
+  name                 = "akssubnet"
+  resource_group_name  = azurerm_resource_group.aks.name
+  virtual_network_name = azurerm_virtual_network.aks_vnet.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
+# Define AKS Cluster
+resource "azurerm_kubernetes_cluster" "aks" {
+  name                = "akscluster"
+  location            = azurerm_resource_group.aks.location
+  resource_group_name = azurerm_resource_group.aks.name
+  dns_prefix          = "aksdns"
+
+  default_node_pool {
+    name       = "default"
+    node_count = 1
+    vm_size    = "Standard_DS2_v2"
+    os_disk_size_gb = 30
+    vnet_subnet_id = azurerm_subnet.aks_subnet.id
+  }
+
+  network_profile {
+    network_plugin    = "azure"
+    service_cidr      = "10.1.0.0/16"
+    dns_service_ip    = "10.1.0.10"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  tags = {
+    environment = "production"
+  }
+}
+
+# Define Node Pool for Worker2 (Docker, Kubernetes)
+resource "azurerm_kubernetes_cluster_node_pool" "worker2" {
+  name                  = "worker2np"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
+  node_count            = 1
+  vm_size               = "Standard_DS2_v2"
+  os_disk_size_gb       = 30
+  vnet_subnet_id        = azurerm_subnet.aks_subnet.id
+  tags = {
+    "worker" = "docker,kubernetes"
+  }
+}
+
+# Define Node Pool for Worker3 (Java, Docker, Kubernetes)
+resource "azurerm_kubernetes_cluster_node_pool" "worker3" {
+  name                  = "worker3np"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
+  node_count            = 1
+  vm_size               = "Standard_DS2_v2"
+  os_disk_size_gb       = 30
+  vnet_subnet_id        = azurerm_subnet.aks_subnet.id
+  tags = {
+    "worker" = "java,docker,kubernetes"
+  }
+}
+
+# Define Node Pool for Worker4 (Docker, Kubernetes)
+resource "azurerm_kubernetes_cluster_node_pool" "worker4" {
+  name                  = "worker4np"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
+  node_count            = 1
+  vm_size               = "Standard_DS2_v2"
+  os_disk_size_gb       = 30
+  vnet_subnet_id        = azurerm_subnet.aks_subnet.id
+  tags = {
+    "worker" = "docker,kubernetes"
+  }
+}
+
+# Output the AKS Cluster Kubeconfig
+output "kube_config" {
+  value     = azurerm_kubernetes_cluster.aks.kube_config_raw
+  sensitive = true
+}
