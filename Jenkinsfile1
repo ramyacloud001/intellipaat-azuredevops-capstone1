@@ -38,6 +38,7 @@ pipeline {
                     sh """
                     sed -i 's|image: .*\${IMAGE_TAG}|image: ${registryUrl}/${registryName}:${versionTag}|' deployment.yaml
                     kubectl apply -f deployment.yaml
+                    kubectl apply -f service.yaml
                     """
                 }
             }
