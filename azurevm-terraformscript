@@ -84,7 +84,7 @@ resource "azurerm_linux_virtual_machine" "Devops-capstone-project2" {
   }
 
   admin_ssh_key {
-    username   = "adminuser"
+    username   = "azureuser"
     public_key = file("~/.ssh/id_rsa.pub")  # Path to your SSH public key file
   }
 }
