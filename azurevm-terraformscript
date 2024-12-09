@@ -1,12 +1,3 @@
-terraform {
-  required_providers {
-    azurerm = {
-      source = "hashicorp/azurerm"
-      version = ">= 2.0"
-    }
-  }
-}
-
 provider "azurerm" {
   features {}
   subscription_id = "9a668e8f-ad3f-48a1-94cb-fbcf50b35167"
@@ -37,6 +28,16 @@ resource "azurerm_subnet" "Devops-capstone-project2" {
   address_prefixes     = ["10.0.1.0/24"]
 }
 
+# Create a Public IP Address
+resource "azurerm_public_ip" "Devops-capstone-project2" {
+  name                         = "Devops-capstone-project2-public-ip"
+  location                     = azurerm_resource_group.Devops-capstone-project2.location
+  resource_group_name          = azurerm_resource_group.Devops-capstone-project2.name
+  allocation_method            = "Dynamic"
+  idle_timeout_in_minutes      = 4
+  sku                          = "Basic"
+}
+
 # Create a Network Security Group
 resource "azurerm_network_security_group" "Devops-capstone-project2" {
   name                = "Devops-capstone-project2-nsg"
@@ -54,6 +55,7 @@ resource "azurerm_network_interface" "Devops-capstone-project2" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.Devops-capstone-project2.id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.Devops-capstone-project2.id
   }
 }
 
