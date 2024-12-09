@@ -10,6 +10,7 @@ pipeline {
         K8S_NAMESPACE = 'default'
         AZURE_SUBSCRIPTION_ID = '9a668e8f-ad3f-48a1-94cb-fbcf50b35167'
         K8S_CLUSTER = 'akscluster'
+        ACR_SECRET_NAME = 'acr-secret'
     }
 
     stages {
@@ -38,6 +39,24 @@ pipeline {
                         sh '''
                         az login --service-principal --username $AZURE_CLIENT_ID --password $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
                         az aks get-credentials --resource-group ${resourceGroup} --name ${K8S_CLUSTER} --subscription ${AZURE_SUBSCRIPTION_ID}
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Create ACR Secret') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'acr-username', variable: 'ACR_USERNAME'),
+                                     string(credentialsId: 'acr-password', variable: 'ACR_PASSWORD'),
+                                     string(credentialsId: 'acr-email', variable: 'ACR_EMAIL')]) {
+                        sh '''
+                        kubectl create secret docker-registry ${ACR_SECRET_NAME} \
+                          --docker-server=${ACR_DOCKER_SERVER} \
+                          --docker-username=${ACR_USERNAME} \
+                          --docker-password=${ACR_PASSWORD} \
+                          --docker-email=${ACR_EMAIL} || true
                         '''
                     }
                 }
