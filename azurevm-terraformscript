@@ -1,0 +1,88 @@
+terraform {
+  required_providers {
+    azurerm = {
+      source = "hashicorp/azurerm"
+      version = ">= 2.0"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {}
+  subscription_id = "9a668e8f-ad3f-48a1-94cb-fbcf50b35167"
+  client_id       = "90e47b61-3cd7-4035-ba4c-3c3882476e6a"
+  client_secret   = ""
+  tenant_id       = "5d3e282f-6b65-4268-8508-1ad71a86351b"
+}
+
+# Create a Resource Group
+resource "azurerm_resource_group" "Devops-capstone-project2" {
+  name     = "Devops-capstone-project2-resources"
+  location = "East US"
+}
+
+# Create a Virtual Network
+resource "azurerm_virtual_network" "Devops-capstone-project2" {
+  name                = "Devops-capstone-project2-vnet"
+  location            = azurerm_resource_group.Devops-capstone-project2.location
+  resource_group_name = azurerm_resource_group.Devops-capstone-project2.name
+  address_space       = ["10.0.0.0/16"]
+}
+
+# Create a Subnet
+resource "azurerm_subnet" "Devops-capstone-project2" {
+  name                 = "Devops-capstone-project2-subnet"
+  resource_group_name  = azurerm_resource_group.Devops-capstone-project2.name
+  virtual_network_name = azurerm_virtual_network.Devops-capstone-project2.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
+# Create a Network Security Group
+resource "azurerm_network_security_group" "Devops-capstone-project2" {
+  name                = "Devops-capstone-project2-nsg"
+  location            = azurerm_resource_group.Devops-capstone-project2.location
+  resource_group_name = azurerm_resource_group.Devops-capstone-project2.name
+}
+
+# Create a Network Interface
+resource "azurerm_network_interface" "Devops-capstone-project2" {
+  name                = "Devops-capstone-project2-nic"
+  location            = azurerm_resource_group.Devops-capstone-project2.location
+  resource_group_name = azurerm_resource_group.Devops-capstone-project2.name
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.Devops-capstone-project2.id
+    private_ip_address_allocation = "Dynamic"
+  }
+}
+
+# Create a Virtual Machine
+resource "azurerm_linux_virtual_machine" "Devops-capstone-project2" {
+  name                = "Devops-capstone-project2-vm"
+  resource_group_name = azurerm_resource_group.Devops-capstone-project2.name
+  location            = azurerm_resource_group.Devops-capstone-project2.location
+  size                = "Standard_DS1_v2"
+  admin_username      = "adminuser"
+  disable_password_authentication = true
+  network_interface_ids = [
+    azurerm_network_interface.Devops-capstone-project2.id,
+  ]
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
+  }
+
+  admin_ssh_key {
+    username   = "adminuser"
+    public_key = file("~/.ssh/id_rsa.pub")  # Path to your SSH public key file
+  }
+}
