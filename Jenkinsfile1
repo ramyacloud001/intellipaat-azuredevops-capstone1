@@ -7,7 +7,7 @@ pipeline {
         registryUrl = 'aksregistrydevops.azurecr.io'
         resourceGroup = 'aks-resource-group'
         versionTag = "v${env.BUILD_ID}-${new Date().format('yyyyMMdd-HHmmss')}"
-        K8S_NAMESPACE = 'default'  // Namespace where your deployment will go
+        K8S_NAMESPACE = 'default'
         AZURE_SUBSCRIPTION_ID = '9a668e8f-ad3f-48a1-94cb-fbcf50b35167'
         K8S_CLUSTER = 'akscluster'
     }
@@ -31,15 +31,27 @@ pipeline {
             }
         }
 
+        stage('Authenticate with AKS') {
+            steps {
+                script {
+                    withCredentials([azureServicePrincipal('<CREDENTIAL_ID>')]) {
+                        sh '''
+                        az login --service-principal --username $AZURE_CLIENT_ID --password $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+                        az aks get-credentials --resource-group ${resourceGroup} --name ${K8S_CLUSTER} --subscription ${AZURE_SUBSCRIPTION_ID}
+                        '''
+                    }
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Replace the image placeholder with the actual image tag
-                    sh """
-                    sed -i 's|image: .*\${IMAGE_TAG}|image: ${registryUrl}/${registryName}:${versionTag}|' deployment.yaml
+                    sh '''
+                    sed -i 's|image: .*${IMAGE_TAG}|image: ${registryUrl}/${registryName}:${versionTag}|' deployment.yaml
                     kubectl apply -f deployment.yaml
                     kubectl apply -f service.yaml
-                    """
+                    '''
                 }
             }
         }
@@ -47,7 +59,7 @@ pipeline {
 
     post {
         always {
-            cleanWs()  // Clean workspace after pipeline execution
+            cleanWs()
         }
     }
 }
