@@ -6,7 +6,7 @@ pipeline {
         registryCredential = 'aksregistrydevops'
         registryUrl = 'aksregistrydevops.azurecr.io'
         resourceGroup = 'aks-resource-group'
-        versionTag = "v${env.BUILD_ID}-${new Date().format('yyyyMMdd-HHmmss')}"
+        versionTag = "v${env.BUILD_ID}-${new Date().format('yyyyMMdd-HHmmss').toLowerCase()}"
         K8S_NAMESPACE = 'default'
         AZURE_SUBSCRIPTION_ID = '9a668e8f-ad3f-48a1-94cb-fbcf50b35167'
         K8S_CLUSTER = 'akscluster'
@@ -48,7 +48,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    sed -i 's|image: .*${IMAGE_TAG}|image: ${registryUrl}/${registryName}:${versionTag}|' deployment.yaml
+                    sed -i 's|image: .*|image: ${registryUrl}/${registryName}:${versionTag}|' deployment.yaml
                     kubectl apply -f deployment.yaml
                     kubectl apply -f service.yaml
                     '''
