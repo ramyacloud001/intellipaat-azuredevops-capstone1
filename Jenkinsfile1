@@ -10,6 +10,7 @@ pipeline {
         K8S_NAMESPACE = 'cluster-test'  // Kubernetes namespace
         AZURE_SUBSCRIPTION_ID = '9a668e8f-ad3f-48a1-94cb-fbcf50b35167'  // Azure subscription ID
         K8S_CLUSTER = 'akscluster'  // Kubernetes cluster name
+        IMAGE_TAG = "${registryUrl}/${registryName}:${versionTag}"  // Full image tag for use in manifests
     }
 
     stages {
@@ -18,7 +19,7 @@ pipeline {
             steps {
                 script {
                     // Build the Docker image with the dynamic version tag
-                    dockerImage = docker.build("${registryName}:${versionTag}")
+                    dockerImage = docker.build("${registryUrl}/${registryName}:${versionTag}")
                 }
             }
         }
@@ -30,15 +31,6 @@ pipeline {
                     docker.withRegistry("https://${registryUrl}", registryCredential) {
                         dockerImage.push("${versionTag}")
                     }
-                }
-            }
-        }
-
-        stage('Verify Deployment Configuration') {
-            steps {
-                script {
-                    // Verify the contents of the deployment.yaml to ensure the replica count is correct
-                    sh 'cat manifest-files/deployment.yaml'
                 }
             }
         }
@@ -60,8 +52,8 @@ pipeline {
                     // Replace the image placeholder in the deployment.yaml with the actual image tag
                     echo "Updating Kubernetes deployment with the new image tag..."
                     sh """
-                    sed -i 's|image: .*\${IMAGE_TAG}|image: ${registryUrl}/${registryName}:${versionTag}|' manifest-files/deployment.yaml
-                    kubectl apply -f manifest-files/deployment.yaml -n ${K8S_NAMESPACE}
+                    sed -i 's|image: .*\${IMAGE_TAG}|image: ${IMAGE_TAG}|' deployment.yaml
+                    kubectl apply -f deployment.yaml -n ${K8S_NAMESPACE}
                     """
                 }
             }
@@ -72,7 +64,8 @@ pipeline {
                 script {
                     // Apply other Kubernetes resources (services, ingress, etc.)
                     sh '''
-                    kubectl apply -f manifest-files/service.yaml -n ${K8S_NAMESPACE} 
+                    kubectl apply -f service.yaml -n ${K8S_NAMESPACE}
+                    kubectl apply -f ingress.yaml -n ${K8S_NAMESPACE}  // If you have an ingress.yaml
                     '''
                 }
             }
@@ -81,7 +74,7 @@ pipeline {
 
     post {
         cleanup {
-            // Remove the TLS files after they are no longer needed
+            // Remove the TLS files after they are no longer needed (if you use SSL/TLS certificates)
             sh 'rm -f ./tls.crt ./privkey.pem ./tls.fullchain.crt'
         }
         always {
