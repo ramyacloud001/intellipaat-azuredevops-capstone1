@@ -6,17 +6,20 @@ pipeline {
             agent {
                 label 'test-node-label'
             }
+            environment {
+                TEST_WORKSPACE = '/var/lib/jenkins/test-workspace'
+            }
             steps {
                 script {
                     echo "Running on Test Node..."
 
                     // Clean and clone the repository into the test workspace
-                    sh 'rm -rf /var/lib/jenkins/test-workspace/*'
-                    sh 'git clone -b develop https://github.com/ramyacloud001/intellipaat-azuredevops-capstone1.git /var/lib/jenkins/test-workspace'
+                    sh 'rm -rf ${TEST_WORKSPACE}/*'
+                    sh 'git clone -b develop https://github.com/ramyacloud001/intellipaat-azuredevops-capstone1.git ${TEST_WORKSPACE}'
 
                     // Simulate test operations
                     echo "Executing tests on Test Node..."
-                    sh 'cd /var/lib/jenkins/test-workspace && echo "Tests executed successfully!"'
+                    sh 'cd ${TEST_WORKSPACE} && echo "Tests executed successfully!"'
                 }
             }
         }
@@ -24,6 +27,9 @@ pipeline {
         stage('Prod Node Operations') {
             agent {
                 label 'prod-node-label'
+            }
+            environment {
+                PROD_WORKSPACE = '/var/lib/jenkins/prod-workspace'
             }
             when {
                 expression { currentBuild.currentResult == 'SUCCESS' }
@@ -33,12 +39,12 @@ pipeline {
                     echo "Running on Prod Node..."
 
                     // Clean and copy files to the prod node workspace
-                    sh 'rm -rf /var/lib/jenkins/prod-workspace/*'
-                    sh 'cp -r /var/lib/jenkins/test-workspace/* /var/lib/jenkins/prod-workspace'
+                    sh 'rm -rf ${PROD_WORKSPACE}/*'
+                    sh 'cp -r ${TEST_WORKSPACE}/* ${PROD_WORKSPACE}'
 
                     // Simulate deployment operations
                     echo "Deploying application on Prod Node..."
-                    sh 'cd /var/lib/jenkins/prod-workspace && echo "Application deployed successfully!"'
+                    sh 'cd ${PROD_WORKSPACE} && echo "Application deployed successfully!"'
                 }
             }
         }
