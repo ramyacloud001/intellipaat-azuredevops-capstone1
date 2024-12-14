@@ -13,8 +13,9 @@ pipeline {
                 script {
                     echo "Running on Test Node..."
 
-                    // Ensure the test workspace directory is clean before cloning the repository
-                    sh 'rm -rf ${TEST_WORKSPACE}/*'
+                    // Ensure the test workspace directory is cleaned properly
+                    sh 'rm -rf ${TEST_WORKSPACE}'
+                    sh 'mkdir -p ${TEST_WORKSPACE}'
                     sh 'git clone -b develop https://github.com/ramyacloud001/intellipaat-azuredevops-capstone1.git ${TEST_WORKSPACE}'
 
                     // Simulate test operations
