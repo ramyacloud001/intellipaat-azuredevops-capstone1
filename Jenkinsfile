@@ -13,7 +13,7 @@ pipeline {
                 script {
                     echo "Running on Test Node..."
 
-                    // Clean and clone the repository into the test workspace
+                    // Ensure the test workspace directory is clean before cloning the repository
                     sh 'rm -rf ${TEST_WORKSPACE}/*'
                     sh 'git clone -b develop https://github.com/ramyacloud001/intellipaat-azuredevops-capstone1.git ${TEST_WORKSPACE}'
 
