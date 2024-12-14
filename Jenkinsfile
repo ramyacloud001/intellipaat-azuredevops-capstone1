@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'prod-node-label'
+    }
 
     environment {
         DOCKER_IMAGE = "ramyacloud001/intellipaat-capstone-master"
@@ -22,16 +24,8 @@ pipeline {
             steps {
                 script {
                     echo "Running tests in Docker container..."
-                    // Stop and remove any existing container with the same name
                     sh "docker ps -q --filter name=${APP_CONTAINER_NAME} | grep -q . && docker stop ${APP_CONTAINER_NAME} && docker rm ${APP_CONTAINER_NAME} || true"
-                    
-                    // Run the Docker container for testing
                     sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:${BUILD_ID}"
-
-                    // Add test commands here, such as:
-                    // sh "curl -I http://localhost:80"
-
-                    // Stop the container after tests
                     sh "docker stop ${APP_CONTAINER_NAME}"
                 }
             }
@@ -45,10 +39,8 @@ pipeline {
                 script {
                     echo "Tagging Docker image for deployment..."
                     sh "docker tag ${DOCKER_IMAGE}:${BUILD_ID} ${DOCKER_IMAGE}:latest"
-
                     echo "Pushing Docker image to Docker Hub..."
                     sh "docker push ${DOCKER_IMAGE}:latest"
-
                     echo "Deploying application..."
                     sh "docker-compose -f docker-compose.yml up -d"
                 }
