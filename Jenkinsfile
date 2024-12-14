@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'test-node-label'
+    }
 
     environment {
         DOCKER_IMAGE = "ramyacloud001/intellipaat-capstone-master"
@@ -9,9 +11,6 @@ pipeline {
 
     stages {
         stage('Build') {
-            when {
-                branch 'test'
-            }
             steps {
                 script {
                     echo "Current Branch: ${env.BRANCH_NAME}"
@@ -22,15 +21,11 @@ pipeline {
         }
 
         stage('Test') {
-            when {
-                branch 'test'
-            }
             steps {
                 script {
                     echo "Running tests in Docker container..."
                     sh "docker ps -q --filter name=${APP_CONTAINER_NAME} | grep -q . && docker stop ${APP_CONTAINER_NAME} && docker rm ${APP_CONTAINER_NAME} || true"
                     sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:${BUILD_ID}"
-                    // Add test commands here
                     sh "docker stop ${APP_CONTAINER_NAME}"
                 }
             }
