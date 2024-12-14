@@ -13,7 +13,7 @@ pipeline {
                 script {
                     echo "Running on Test Node..."
 
-                    // Ensure the test workspace directory is cleaned properly
+                    // Ensure the test workspace directory is clean before cloning the repository
                     sh 'rm -rf ${TEST_WORKSPACE}'
                     sh 'mkdir -p ${TEST_WORKSPACE}'
                     sh 'git clone -b develop https://github.com/ramyacloud001/intellipaat-azuredevops-capstone1.git ${TEST_WORKSPACE}'
@@ -39,9 +39,10 @@ pipeline {
                 script {
                     echo "Running on Prod Node..."
 
-                    // Clean and copy application files to the prod node workspace
-                    sh 'rm -rf ${PROD_WORKSPACE}/*'
-                    sh 'cp -r ${TEST_WORKSPACE}/. ${PROD_WORKSPACE}'
+                    // Ensure the prod workspace directory is clean before copying files
+                    sh 'rm -rf ${PROD_WORKSPACE}'
+                    sh 'mkdir -p ${PROD_WORKSPACE}'
+                    sh 'cp -r ${TEST_WORKSPACE}/* ${PROD_WORKSPACE}/'
 
                     // Simulate deployment operations
                     echo "Deploying application on Prod Node..."
