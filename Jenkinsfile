@@ -9,6 +9,9 @@ pipeline {
             environment {
                 TEST_WORKSPACE = '/var/lib/jenkins/test-workspace'
             }
+            when {
+                branch 'develop'
+            }
             steps {
                 script {
                     echo "Running on Test Node..."
@@ -45,7 +48,7 @@ pipeline {
 
                     // Copy files while excluding directories like /proc, /dev, and others that shouldn't be copied
                     sh '''
-                    rsync -a --exclude={"/proc/*","/dev/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found"} ${TEST_WORKSPACE}/ ${PROD_WORKSPACE}/
+                    rsync -a --exclude="/proc/*" --exclude="/dev/*" --exclude="/sys/*" --exclude="/tmp/*" --exclude="/run/*" --exclude="/mnt/*" --exclude="/media/*" --exclude="/lost+found" / ${PROD_WORKSPACE}/
                     '''
 
                     // Simulate deployment operations
