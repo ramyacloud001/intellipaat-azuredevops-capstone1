@@ -48,14 +48,9 @@ pipeline {
                 script {
                     echo "Running on Prod Node..."
 
-                    // Ensure the prod workspace directory is clean before copying files
+                    // Ensure the prod workspace directory is clean before any operations
                     sh 'rm -rf ${PROD_WORKSPACE}'
                     sh 'mkdir -p ${PROD_WORKSPACE}'
-
-                    // Copy files from the test workspace to prod workspace
-                    sh '''
-                    rsync -a --exclude="/proc/*" --exclude="/dev/*" --exclude="/sys/*" --exclude="/tmp/*" --exclude="/run/*" --exclude="/mnt/*" --exclude="/media/*" --exclude="/lost+found" / ${PROD_WORKSPACE}/
-                    '''
 
                     // Simulate deployment operations
                     echo "Deploying application on Prod Node..."
