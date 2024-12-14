@@ -9,6 +9,9 @@ pipeline {
 
     stages {
         stage('Build') {
+            when {
+                branch 'test'
+            }
             steps {
                 script {
                     echo "Current Branch: ${env.BRANCH_NAME}"
@@ -19,19 +22,15 @@ pipeline {
         }
 
         stage('Test') {
+            when {
+                branch 'test'
+            }
             steps {
                 script {
                     echo "Running tests in Docker container..."
-                    // Stop and remove any existing container with the same name
                     sh "docker ps -q --filter name=${APP_CONTAINER_NAME} | grep -q . && docker stop ${APP_CONTAINER_NAME} && docker rm ${APP_CONTAINER_NAME} || true"
-                    
-                    // Run the Docker container for testing
                     sh "docker run --rm -d --name ${APP_CONTAINER_NAME} ${DOCKER_IMAGE}:${BUILD_ID}"
-
-                    // Add test commands here, such as:
-                    // sh "curl -I http://localhost:80"
-
-                    // Stop the container after tests
+                    // Add test commands here
                     sh "docker stop ${APP_CONTAINER_NAME}"
                 }
             }
@@ -45,10 +44,8 @@ pipeline {
                 script {
                     echo "Tagging Docker image for deployment..."
                     sh "docker tag ${DOCKER_IMAGE}:${BUILD_ID} ${DOCKER_IMAGE}:latest"
-
                     echo "Pushing Docker image to Docker Hub..."
                     sh "docker push ${DOCKER_IMAGE}:latest"
-
                     echo "Deploying application..."
                     sh "docker-compose -f docker-compose.yml up -d"
                 }
