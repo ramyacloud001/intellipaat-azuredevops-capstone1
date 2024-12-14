@@ -42,7 +42,11 @@ pipeline {
                     // Ensure the prod workspace directory is clean before copying files
                     sh 'rm -rf ${PROD_WORKSPACE}'
                     sh 'mkdir -p ${PROD_WORKSPACE}'
-                    sh 'cp -r ${TEST_WORKSPACE}/* ${PROD_WORKSPACE}/'
+
+                    // Copy files while excluding directories like /proc, /dev, and others that shouldn't be copied
+                    sh '''
+                    rsync -a --exclude={"/proc/*","/dev/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found"} ${TEST_WORKSPACE}/ ${PROD_WORKSPACE}/
+                    '''
 
                     // Simulate deployment operations
                     echo "Deploying application on Prod Node..."
