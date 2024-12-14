@@ -38,9 +38,9 @@ pipeline {
                 script {
                     echo "Running on Prod Node..."
 
-                    // Clean and copy files to the prod node workspace
+                    // Clean and copy application files to the prod node workspace
                     sh 'rm -rf ${PROD_WORKSPACE}/*'
-                    sh 'cp -r ${TEST_WORKSPACE}/* ${PROD_WORKSPACE}'
+                    sh 'cp -r ${TEST_WORKSPACE}/. ${PROD_WORKSPACE}'
 
                     // Simulate deployment operations
                     echo "Deploying application on Prod Node..."
